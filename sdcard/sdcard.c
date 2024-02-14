@@ -113,8 +113,11 @@
  * or that a reply has already been written. */
 #define NO_STATUS 1
 
+// ananbox: disable setgroups
+#if 0
 /* Supplementary groups to execute with */
 static const gid_t kGroups[1] = { AID_PACKAGE_INFO };
+#endif
 
 /* Permission mode for a specific node. Controls how file permissions
  * are derived for children nodes. */
@@ -1830,6 +1833,7 @@ static int fuse_setup(struct fuse* fuse, gid_t gid, mode_t mask) {
     return 0;
 }
 
+__attribute__ ((unused))
 static void run(const char* source_path, const char* label, uid_t uid,
         gid_t gid, userid_t userid, bool multi_user, bool full_write) {
     struct fuse_global global;
@@ -1921,6 +1925,8 @@ static void run(const char* source_path, const char* label, uid_t uid,
         }
     }
 
+    // ananbox: disable setgid & setuid
+#if 0
     /* Drop privs */
     if (setgroups(sizeof(kGroups) / sizeof(kGroups[0]), kGroups) < 0) {
         ERROR("cannot setgroups: %s\n", strerror(errno));
@@ -1934,6 +1940,7 @@ static void run(const char* source_path, const char* label, uid_t uid,
         ERROR("cannot setuid: %s\n", strerror(errno));
         exit(1);
     }
+#endif
 
     if (multi_user) {
         fs_prepare_dir(global.obb_path, 0775, uid, gid);
@@ -1968,6 +1975,7 @@ static int sdcardfs_setup(const char *source_path, const char *dest_path, uid_t 
     return 0;
 }
 
+__attribute__ ((unused))
 static void run_sdcardfs(const char* source_path, const char* label, uid_t uid,
         gid_t gid, userid_t userid, bool multi_user, bool full_write) {
     char dest_path_default[PATH_MAX];
@@ -2006,6 +2014,8 @@ static void run_sdcardfs(const char* source_path, const char* label, uid_t uid,
         }
     }
 
+    // ananbox: disable drop privs
+#if 0
     /* Drop privs */
     if (setgroups(sizeof(kGroups) / sizeof(kGroups[0]), kGroups) < 0) {
         ERROR("cannot setgroups: %s\n", strerror(errno));
@@ -2019,6 +2029,7 @@ static void run_sdcardfs(const char* source_path, const char* label, uid_t uid,
         ERROR("cannot setuid: %s\n", strerror(errno));
         exit(1);
     }
+#endif
 
     if (multi_user) {
         snprintf(obb_path, sizeof(obb_path), "%s/obb", source_path);
@@ -2050,6 +2061,7 @@ static bool supports_sdcardfs(void) {
     return false;
 }
 
+__attribute__ ((unused))
 static bool should_use_sdcardfs(void) {
     char property[PROPERTY_VALUE_MAX];
 
@@ -2073,6 +2085,58 @@ static bool should_use_sdcardfs(void) {
     }
 }
 
+#if 0
+static void run_bindfs(const char* source_path, const char* label, bool multi_user) {
+    char dest_path_default[PATH_MAX];
+    char dest_path_read[PATH_MAX];
+    char dest_path_write[PATH_MAX];
+    char obb_path[PATH_MAX];
+    snprintf(dest_path_default, PATH_MAX, "/mnt/runtime/default/%s", label);
+    snprintf(dest_path_read, PATH_MAX, "/mnt/runtime/read/%s", label);
+    snprintf(dest_path_write, PATH_MAX, "/mnt/runtime/write/%s", label);
+
+    if (
+            mount(source_path, dest_path_default, NULL, MS_BIND, NULL) != 0 ||
+            mount(source_path, dest_path_read, NULL, MS_BIND, NULL) != 0 ||
+            mount(source_path, dest_path_write, NULL, MS_BIND, NULL) != 0
+       ){
+        ALOGE("bind mount failed");
+        exit(1);
+    }
+
+    if (multi_user) {
+        snprintf(obb_path, sizeof(obb_path), "%s/obb", source_path);
+        fs_prepare_dir(&obb_path[0], 0775, 0, 0);
+    }
+}
+#endif
+
+
+static void run_symlink(const char* source_path, const char* label, bool multi_user) {
+    char dest_path_default[PATH_MAX];
+    char dest_path_read[PATH_MAX];
+    char dest_path_write[PATH_MAX];
+    char obb_path[PATH_MAX];
+    snprintf(dest_path_default, PATH_MAX, "/mnt/runtime/default/%s", label);
+    snprintf(dest_path_read, PATH_MAX, "/mnt/runtime/read/%s", label);
+    snprintf(dest_path_write, PATH_MAX, "/mnt/runtime/write/%s", label);
+
+    if ((
+            symlink(source_path, dest_path_default) != 0 ||
+            symlink(source_path, dest_path_read) != 0 ||
+            symlink(source_path, dest_path_write) != 0
+        ) &&
+            errno != EEXIST
+       ){
+        ALOGE("symlink failed");
+        exit(1);
+    }
+
+    if (multi_user) {
+        snprintf(obb_path, sizeof(obb_path), "%s/obb", source_path);
+        fs_prepare_dir(&obb_path[0], 0775, 0, 0);
+    }
+}
 int main(int argc, char **argv) {
     const char *source_path = NULL;
     const char *label = NULL;
@@ -2145,10 +2209,14 @@ int main(int argc, char **argv) {
         sleep(1);
     }
 
+    // ananbox
+    run_symlink(source_path, label, multi_user);
+#if 0
     if (should_use_sdcardfs()) {
         run_sdcardfs(source_path, label, uid, gid, userid, multi_user, full_write);
     } else {
         run(source_path, label, uid, gid, userid, multi_user, full_write);
     }
+#endif
     return 1;
 }

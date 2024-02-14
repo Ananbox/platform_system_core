@@ -87,6 +87,8 @@
 //
 
 static int drop_privs() {
+    // ananbox: disable drop_privs
+#if 0
     struct sched_param param;
     memset(&param, 0, sizeof(param));
 
@@ -119,6 +121,7 @@ static int drop_privs() {
     if (setuid(AID_LOGD) != 0) {
         return -1;
     }
+#endif
 
     return 0;
 }
@@ -226,8 +229,11 @@ static void *reinit_thread_start(void * /*obj*/) {
     // If we are AID_ROOT, we should drop to AID_SYSTEM, if we are anything
     // else, we have even lesser privileges and accept our fate. Not worth
     // checking for error returns setting this thread's privileges.
+    // ananbox:  disable setgid & setuid
+#if 0
     (void)setgid(AID_SYSTEM);
     (void)setuid(AID_SYSTEM);
+#endif
 
     while (reinit_running && !sem_wait(&reinit) && reinit_running) {
 

@@ -541,6 +541,8 @@ static bool perform_dump(const debugger_request_t& request, int fd, int tombston
 }
 
 static bool drop_privileges() {
+  // ananbox: disable drop_privileges
+#if 0
   // AID_LOG: for reading the logs data associated with the crashing process.
   // AID_READPROC: for reading /proc/<PID>/{comm,cmdline}.
   gid_t groups[] = { AID_DEBUGGERD, AID_LOG, AID_READPROC };
@@ -558,6 +560,7 @@ static bool drop_privileges() {
     ALOGE("debuggerd: failed to setresuid: %s", strerror(errno));
     return false;
   }
+#endif
 
   return true;
 }

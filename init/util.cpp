@@ -189,6 +189,8 @@ bool read_file(const char* path, std::string* content) {
 
     // For security reasons, disallow world-writable
     // or group-writable files.
+    // ananbox: newfstat won't translate path /vendor/etc/init, so just simply disable this check
+#if 0
     struct stat sb;
     if (fstat(fd, &sb) == -1) {
         ERROR("fstat failed for '%s': %s\n", path, strerror(errno));
@@ -198,6 +200,7 @@ bool read_file(const char* path, std::string* content) {
         ERROR("skipping insecure file '%s'\n", path);
         return false;
     }
+#endif
 
     bool okay = android::base::ReadFdToString(fd, content);
     close(fd);

@@ -20,6 +20,8 @@
 
 #include <log/log.h>
 
+// ananbox: disable socket_peer_is_trusted
+#undef __ANDROID__
 #if defined(__ANDROID__)
 /* For the socket trust (credentials) check */
 #include <private/android_filesystem_config.h>

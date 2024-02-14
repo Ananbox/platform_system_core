@@ -43,6 +43,7 @@
 
 static const char* root_seclabel = nullptr;
 
+#if 0
 static void drop_capabilities_bounding_set_if_needed() {
 #ifdef ALLOW_ADBD_ROOT
     char value[PROPERTY_VALUE_MAX];
@@ -158,6 +159,7 @@ static void drop_privileges(int server_port) {
         }
     }
 }
+#endif
 
 int adbd_main(int server_port) {
     umask(0);
@@ -186,7 +188,8 @@ int adbd_main(int server_port) {
           " unchanged.\n");
     }
 
-    drop_privileges(server_port);
+    // ananbox: disable drop_privileges
+    // drop_privileges(server_port);
 
     bool is_usb = false;
     if (access(USB_ADB_PATH, F_OK) == 0 || access(USB_FFS_ADB_EP0, F_OK) == 0) {

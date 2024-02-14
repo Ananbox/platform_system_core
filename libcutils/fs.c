@@ -37,8 +37,8 @@
 #define ALL_PERMS (S_ISUID | S_ISGID | S_ISVTX | S_IRWXU | S_IRWXG | S_IRWXO)
 #define BUF_SIZE 64
 
-static int fs_prepare_path_impl(const char* path, mode_t mode, uid_t uid, gid_t gid,
-        int allow_fixup, int prepare_as_dir) {
+static int fs_prepare_path_impl(const char* path, __attribute__((unused))mode_t mode, __attribute__((unused))uid_t uid, __attribute__((unused))gid_t gid,
+        __attribute__((unused))int allow_fixup, int prepare_as_dir) {
     // Check if path needs to be created
     struct stat sb;
     int create_result = -1;
@@ -58,6 +58,8 @@ static int fs_prepare_path_impl(const char* path, mode_t mode, uid_t uid, gid_t 
         return -1;
     }
 
+    // Ananbox: disable fs owner & mode match
+#if 0
     int owner_match = ((sb.st_uid == uid) && (sb.st_gid == gid));
     int mode_match = ((sb.st_mode & ALL_PERMS) == mode);
     if (owner_match && mode_match) {
@@ -75,6 +77,9 @@ static int fs_prepare_path_impl(const char* path, mode_t mode, uid_t uid, gid_t 
             return 0;
         }
     }
+#else
+    return 0;
+#endif
 
 create:
     create_result = prepare_as_dir
@@ -92,6 +97,7 @@ create:
             ALOGW("Failed to close file after create %s: %s", path, strerror(errno));
         }
     }
+#if 0
 fixup:
     if (TEMP_FAILURE_RETRY(chmod(path, mode)) == -1) {
         ALOGE("Failed to chmod(%s, %d): %s", path, mode, strerror(errno));
@@ -101,6 +107,7 @@ fixup:
         ALOGE("Failed to chown(%s, %d, %d): %s", path, uid, gid, strerror(errno));
         return -1;
     }
+#endif
 
     return 0;
 }

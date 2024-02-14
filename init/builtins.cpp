@@ -306,6 +306,14 @@ static int do_mkdir(const std::vector<std::string>& args) {
         mode = std::stoul(args[2], 0, 8);
     }
 
+    // ananbox: not allow to mkdir at /sys /proc /dev
+    if (
+            strncmp("/proc", args[1].c_str(), 5) == 0 ||
+            strncmp("/sys", args[1].c_str(), 4) == 0 ||
+            strncmp("/dev", args[1].c_str(), 4) == 0 
+       ) {
+        return 0;
+    }
     ret = make_dir(args[1].c_str(), mode);
     /* chmod in case the directory already exists */
     if (ret == -1 && errno == EEXIST) {
@@ -346,8 +354,10 @@ static int do_mkdir(const std::vector<std::string>& args) {
 }
 
 /* umount <path> */
-static int do_umount(const std::vector<std::string>& args) {
-  return umount(args[1].c_str());
+static int do_umount(const std::vector<std::string>& /*args*/) {
+  // ananbox: disable umount
+  //return umount(args[1].c_str());
+  return 0;
 }
 
 static struct {
@@ -376,6 +386,8 @@ static struct {
 
 /* mount <type> <device> <path> <flags ...> <options> */
 static int do_mount(const std::vector<std::string>& args) {
+    // ananbox: disable do_mount
+    return 0;
     char tmp[64];
     const char *source, *target, *system;
     const char *options = NULL;
@@ -483,11 +495,18 @@ static void import_late(const std::vector<std::string>& args, size_t start_index
     Parser& parser = Parser::GetInstance();
     if (end_index <= start_index) {
         // Use the default set if no path is given
+        // ananbox: translate path /vendor/etc/init will failed for unknown reason
+#if 0
         static const std::vector<std::string> init_directories = {
             "/system/etc/init",
             "/vendor/etc/init",
             "/odm/etc/init"
         };
+#else
+        static const std::vector<std::string> init_directories = {
+            "/system/etc/init",
+        };
+#endif
 
         for (const auto& dir : init_directories) {
             parser.ParseConfig(dir);
@@ -786,8 +805,11 @@ static int do_sysclktz(const std::vector<std::string>& args) {
 
     memset(&tz, 0, sizeof(tz));
     tz.tz_minuteswest = std::stoi(args[1]);
+    // ananbox: disable this command
+    /*
     if (settimeofday(NULL, &tz))
         return -1;
+        */
     return 0;
 }
 
@@ -810,10 +832,14 @@ static int do_verity_update_state(const std::vector<std::string>& args) {
     return fs_mgr_update_verity_state(verity_update_property);
 }
 
-static int do_write(const std::vector<std::string>& args) {
+static int do_write(const std::vector<std::string>& args __attribute__((unused))) {
+    // ananbox: simply disable all write
+#if 0 
     const char* path = args[1].c_str();
     const char* value = args[2].c_str();
     return write_file(path, value);
+#endif
+    return 0;
 }
 
 static int do_copy(const std::vector<std::string>& args) {
@@ -875,6 +901,14 @@ out:
 }
 
 static int do_chown(const std::vector<std::string>& args) {
+    // ananbox: not allow to chown at /sys /proc /dev
+    if (
+            strncmp("/proc", args[2].c_str(), 5) == 0 ||
+            strncmp("/sys", args[2].c_str(), 4) == 0 ||
+            strncmp("/dev", args[2].c_str(), 4) == 0 
+       ) {
+        return 0;
+    }
     /* GID is optional. */
     if (args.size() == 3) {
         if (lchown(args[2].c_str(), decode_uid(args[1].c_str()), -1) == -1)
@@ -904,6 +938,14 @@ static mode_t get_mode(const char *s) {
 
 static int do_chmod(const std::vector<std::string>& args) {
     mode_t mode = get_mode(args[1].c_str());
+    // ananbox: not allow to chmod at /sys /proc /dev
+    if (
+            strncmp("/proc", args[2].c_str(), 5) == 0 ||
+            strncmp("/sys", args[2].c_str(), 4) == 0 ||
+            strncmp("/dev", args[2].c_str(), 4) == 0 
+       ) {
+        return 0;
+    }
     if (fchmodat(AT_FDCWD, args[2].c_str(), mode, AT_SYMLINK_NOFOLLOW) < 0) {
         return -errno;
     }

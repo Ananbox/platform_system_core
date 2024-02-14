@@ -161,6 +161,7 @@ void handle_control_message(const std::string& msg, const std::string& name) {
     }
 }
 
+__attribute__((unused))
 static int wait_for_coldboot_done_action(const std::vector<std::string>& args) {
     Timer t;
 
@@ -625,7 +626,7 @@ int main(int argc, char** argv) {
         // mount("devpts", "/dev/pts", "devpts", 0, NULL);
         // #define MAKE_STR(x) __STRING(x)
         // mount("proc", "/proc", "proc", 0, "hidepid=2,gid=" MAKE_STR(AID_READPROC));
-        mount("sysfs", "/sys", "sysfs", 0, NULL);
+        // mount("sysfs", "/sys", "sysfs", 0, NULL);
     }
 
     // We must have some place other than / to create the device nodes for
@@ -712,7 +713,8 @@ int main(int argc, char** argv) {
     am.QueueEventTrigger("early-init");
 
     // Queue an action that waits for coldboot done so we know ueventd has set up all of /dev...
-    am.QueueBuiltinAction(wait_for_coldboot_done_action, "wait_for_coldboot_done");
+    // ananbox: disable coldboot check
+    //am.QueueBuiltinAction(wait_for_coldboot_done_action, "wait_for_coldboot_done");
     // ... so that we can start queuing up actions that require stuff from /dev.
     am.QueueBuiltinAction(mix_hwrng_into_linux_rng_action, "mix_hwrng_into_linux_rng");
     am.QueueBuiltinAction(set_mmap_rnd_bits_action, "set_mmap_rnd_bits");

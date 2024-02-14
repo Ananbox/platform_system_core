@@ -530,7 +530,8 @@ void load_recovery_id_prop() {
 void load_system_props() {
     load_properties_from_file(PROP_PATH_SYSTEM_BUILD, NULL);
     load_properties_from_file(PROP_PATH_VENDOR_BUILD, NULL);
-    load_properties_from_file(PROP_PATH_FACTORY, "ro.*");
+    // ananbox: not loaded from PROP_PATH_FACTORY
+    //load_properties_from_file(PROP_PATH_FACTORY, "ro.*");
     load_recovery_id_prop();
 }
 

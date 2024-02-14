@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <android-base/stringprintf.h>
 #include <private/android_filesystem_config.h>
@@ -55,15 +56,19 @@ int ueventd_main(int argc, char **argv)
 
     NOTICE("ueventd started!\n");
 
+    // ananbox
+#if 0
     selinux_callback cb;
     cb.func_log = selinux_klog_callback;
     selinux_set_callback(SELINUX_CB_LOG, cb);
+#endif
 
     std::string hardware = property_get("ro.hardware");
 
     ueventd_parse_config_file("/ueventd.rc");
     ueventd_parse_config_file(android::base::StringPrintf("/ueventd.%s.rc", hardware.c_str()).c_str());
 
+#if 0
     device_init();
 
     pollfd ufd;
@@ -80,6 +85,10 @@ int ueventd_main(int argc, char **argv)
             handle_device_fd();
         }
     }
+#endif
+    while (true) {
+       sleep(30);
+    } 
 
     return 0;
 }

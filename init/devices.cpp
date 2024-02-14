@@ -265,7 +265,8 @@ static void make_device(const char *path,
         }
     }
     chown(path, uid, -1);
-    setegid(AID_ROOT);
+    // ananbox: disable setegid
+    //setegid(AID_ROOT);
 
     freecon(secontext);
     setfscreatecon(NULL);

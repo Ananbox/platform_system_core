@@ -433,6 +433,8 @@ bool Service::Start() {
             ZapStdio();
         }
 
+        // ananbox: disable setgid, setpgid, setuid, setgroups
+#if 0
         setpgid(0, getpid());
 
         // As requested, set our gid, supplemental gids, and uid.
@@ -454,6 +456,7 @@ bool Service::Start() {
                 _exit(127);
             }
         }
+#endif
 #if 0
         if (!seclabel_.empty()) {
             if (setexeccon(seclabel_.c_str()) < 0) {
