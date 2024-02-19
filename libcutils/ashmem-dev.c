@@ -37,6 +37,8 @@
 
 #define ASHMEM_DEVICE "/dev/ashmem"
 
+#include "ashmem-hack.inc"
+
 /* ashmem identity */
 static dev_t __ashmem_rdev;
 /*
@@ -85,7 +87,7 @@ static int __ashmem_open()
 }
 
 /* Make sure file descriptor references ashmem, negative number means false */
-static int __ashmem_is_ashmem(int fd)
+static int __ashmem_is_ashmem(int fd, int fatal)
 {
     dev_t rdev;
     struct stat st;
@@ -117,15 +119,17 @@ static int __ashmem_is_ashmem(int fd)
         }
     }
 
-    if (rdev) {
-        LOG_ALWAYS_FATAL("illegal fd=%d mode=0%o rdev=%d:%d expected 0%o %d:%d",
-          fd, st.st_mode, major(st.st_rdev), minor(st.st_rdev),
-          S_IFCHR | S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IRGRP,
-          major(rdev), minor(rdev));
-    } else {
-        LOG_ALWAYS_FATAL("illegal fd=%d mode=0%o rdev=%d:%d expected 0%o",
-          fd, st.st_mode, major(st.st_rdev), minor(st.st_rdev),
-          S_IFCHR | S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IRGRP);
+    if (fatal) {
+        if (rdev) {
+            LOG_ALWAYS_FATAL("illegal fd=%d mode=0%o rdev=%d:%d expected 0%o %d:%d",
+                    fd, st.st_mode, major(st.st_rdev), minor(st.st_rdev),
+                    S_IFCHR | S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IRGRP,
+                    major(rdev), minor(rdev));
+        } else {
+            LOG_ALWAYS_FATAL("illegal fd=%d mode=0%o rdev=%d:%d expected 0%o",
+                    fd, st.st_mode, major(st.st_rdev), minor(st.st_rdev),
+                    S_IFCHR | S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IRGRP);
+        }
     }
     /* NOTREACHED */
 
@@ -143,6 +147,10 @@ static int __ashmem_is_ashmem(int fd)
 int ashmem_create_region(const char *name, size_t size)
 {
     int ret, save_errno;
+
+    if (has_memfd_support()) {
+        return memfd_create_region(name ? name : "none", size);
+    }
 
     int fd = __ashmem_open();
     if (fd < 0) {
@@ -175,7 +183,11 @@ error:
 
 int ashmem_set_prot_region(int fd, int prot)
 {
-    int ret = __ashmem_is_ashmem(fd);
+    if (has_memfd_support() && !memfd_is_ashmem(fd)) {
+        return memfd_set_prot_region(fd, prot);
+    }
+
+    int ret = __ashmem_is_ashmem(fd, 1);
     if (ret < 0) {
         return ret;
     }
@@ -185,9 +197,13 @@ int ashmem_set_prot_region(int fd, int prot)
 
 int ashmem_pin_region(int fd, size_t offset, size_t len)
 {
+    if (has_memfd_support() && !memfd_is_ashmem(fd)) {
+        return 0;
+    }
+
     struct ashmem_pin pin = { offset, len };
 
-    int ret = __ashmem_is_ashmem(fd);
+    int ret = __ashmem_is_ashmem(fd, 1);
     if (ret < 0) {
         return ret;
     }
@@ -197,9 +213,13 @@ int ashmem_pin_region(int fd, size_t offset, size_t len)
 
 int ashmem_unpin_region(int fd, size_t offset, size_t len)
 {
+    if (has_memfd_support() && !memfd_is_ashmem(fd)) {
+        return 0;
+    }
+
     struct ashmem_pin pin = { offset, len };
 
-    int ret = __ashmem_is_ashmem(fd);
+    int ret = __ashmem_is_ashmem(fd, 1);
     if (ret < 0) {
         return ret;
     }
@@ -209,7 +229,22 @@ int ashmem_unpin_region(int fd, size_t offset, size_t len)
 
 int ashmem_get_size_region(int fd)
 {
-    int ret = __ashmem_is_ashmem(fd);
+    if (has_memfd_support() && !memfd_is_ashmem(fd)) {
+        struct stat sb;
+
+        if (fstat(fd, &sb) == -1) {
+            ALOGE("ashmem_get_size_region(%d): fstat failed: %s\n", fd, strerror(errno));
+            return -1;
+        }
+
+        if (debug_log) {
+            ALOGD("ashmem_get_size_region(%d): %d\n", fd, (int)(sb.st_size));
+        }
+
+        return sb.st_size;
+    }
+
+    int ret = __ashmem_is_ashmem(fd, 1);
     if (ret < 0) {
         return ret;
     }
