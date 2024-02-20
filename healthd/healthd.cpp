@@ -323,7 +323,10 @@ static int healthd_init() {
     healthd_board_init(&healthd_config);
     healthd_mode_ops->init(&healthd_config);
     wakealarm_init();
+    // ananbox: uevent Permission denied
+#if 0
     uevent_init();
+#endif
     gBatteryMonitor = new BatteryMonitor();
     gBatteryMonitor->init(&healthd_config);
     return 0;
