@@ -37,7 +37,8 @@ static inline SchedPolicy _policy(SchedPolicy p)
    return p == SP_DEFAULT ? SP_SYSTEM_DEFAULT : p;
 }
 
-#if defined(__ANDROID__)
+//#if defined(__ANDROID__)
+#if 0
 
 #include <pthread.h>
 #include <sched.h>

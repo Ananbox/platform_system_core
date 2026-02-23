@@ -32,10 +32,15 @@
 #endif
 
 int android_set_ioprio(int pid __android_unused, IoSchedClass clazz __android_unused, int ioprio __android_unused) {
-#if defined(__ANDROID__)
+//#if defined(__ANDROID__)
+#if 0
     if (syscall(SYS_ioprio_set, IOPRIO_WHO_PROCESS, pid, ioprio | (clazz << IOPRIO_CLASS_SHIFT))) {
         return -1;
     }
+#else
+    (void) pid;
+    (void) clazz;
+    (void) ioprio;
 #endif
     return 0;
 }
